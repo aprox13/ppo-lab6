@@ -8,7 +8,9 @@ object Tokens extends Enumeration {
   val Whitespaces: Token = RegexpToken("\\s+".r, "{{whitespace}}")
   val Bracket: Token = RegexpToken("[()]".r, "{{bracket}}")
   val Operator: Token = RegexpToken("[+\\-*/]".r, "{{operator}}")
-  val EOF: Token = RegexpToken("^$".r, "{{eof}}")
+  val EOF: Token = new Token("{{eof}}") {
+    override def matches(s: String): Option[String] = Some(s).filterNot(_.nonEmpty)
+  }
 
   def allTokens: Seq[Token] =
     values.collect {
