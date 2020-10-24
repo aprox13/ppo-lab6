@@ -7,7 +7,7 @@ object Operators extends Enumeration {
   val Plus: Operator = Operator("+", 1)
   val Minus: Operator = Operator("-", 1)
   val Multiply: Operator = Operator("*", 2)
-  val Divide: Operator = Operator("/", -1)
+  val Divide: Operator = Operator("/", 2)
   val RegexAll: Regex = "[+\\-*/]".r
 
   def parseSafe(s: String): Option[Operator] =
@@ -20,6 +20,5 @@ object Operators extends Enumeration {
     }
 
   case class Operator(pattern: String, weight: Int) extends super.Val(name = pattern)
-
 
 }

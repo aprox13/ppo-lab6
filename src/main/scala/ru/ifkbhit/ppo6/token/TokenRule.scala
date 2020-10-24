@@ -34,7 +34,7 @@ case object NumberTokenRule extends RegexpTokenRule(
 
 case object WhitespacesTokenRule extends RegexpTokenRule(
   "\\s+".r,
-  (_, index) => Some(WhiteSpaceToken(index))
+  (s, index) => Some(WhiteSpaceToken(TokenMeta(index, s.length)))
 )
 
 case object BracketTokenRule extends RegexpTokenRule(
@@ -45,7 +45,7 @@ case object BracketTokenRule extends RegexpTokenRule(
 
 case object OperatorTokenRule extends RegexpTokenRule(
   Operators.RegexAll,
-  (s, index) => Operators.parseSafe(s).map(OperatorToken(_, index))
+  (s, index) => Operators.parseSafe(s).map(OperatorToken(_, TokenMeta(index, s.length)))
 )
 
 case object EofTokenRule extends TokenRule {
@@ -68,6 +68,6 @@ object TokenRule {
   )
 
 
-  def produceF[T](mapper: String => T, creator: (T, Int) => Token)(s: String, index: Int): Option[Token] =
-    Some(creator(mapper(s), index))
+  def produceF[T](mapper: String => T, creator: (T, TokenMeta) => Token)(s: String, index: Int): Option[Token] =
+    Some(creator(mapper(s), TokenMeta(index, s.length)))
 }

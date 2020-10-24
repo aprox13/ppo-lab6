@@ -8,7 +8,7 @@ class TokenizerSpec extends WordSpec with Matchers {
   private def expectedFailOn(source: String) = {
     val tokenizer = new TokenizerImpl
 
-    an[IllegalArgumentException] should be thrownBy tokenizer.accept(source)
+    an[IllegalStateException] should be thrownBy tokenizer.accept(source)
   }
 
   private case class TestCase(source: String, expected: Seq[Token]) {
@@ -20,6 +20,8 @@ class TokenizerSpec extends WordSpec with Matchers {
     }
   }
 
+  private def meta(index: Int): TokenMeta = TokenMeta(index, 1)
+
   "Tokenizer" should {
     "correctly parse single tokens" when {
       "comes nothing" in {
@@ -27,41 +29,41 @@ class TokenizerSpec extends WordSpec with Matchers {
       }
 
       "comes positive number int" in {
-        TestCase("10", Seq(NumberToken(10.0, 0), EofToken)).check()
+        TestCase("10", Seq(NumberToken(10.0, TokenMeta(0, 2)), EofToken)).check()
       }
 
       "comes negative number int" in {
-        TestCase("-10", Seq(NumberToken(-10.0, 0), EofToken)).check()
+        TestCase("-10", Seq(NumberToken(-10.0, TokenMeta(0, 3)), EofToken)).check()
       }
 
       "comes positive number double" in {
-        TestCase("10.3", Seq(NumberToken(10.3, 0), EofToken)).check()
+        TestCase("10.3", Seq(NumberToken(10.3, TokenMeta(0, 4)), EofToken)).check()
       }
 
       "comes negative number double" in {
-        TestCase("-10.3", Seq(NumberToken(-10.3, 0), EofToken)).check()
+        TestCase("-10.3", Seq(NumberToken(-10.3, TokenMeta(0, 5)), EofToken)).check()
       }
 
       "comes bad formatted negative number int" in {
-        TestCase("-  10", Seq(NumberToken(-10.0, 0), EofToken)).check()
+        TestCase("-  10", Seq(NumberToken(-10.0, TokenMeta(0, 5)), EofToken)).check()
       }
 
       "comes bad formatted negative number double" in {
-        TestCase("-  10.3", Seq(NumberToken(-10.3, 0), EofToken)).check()
+        TestCase("-  10.3", Seq(NumberToken(-10.3, TokenMeta(0, 7)), EofToken)).check()
       }
 
       "comes bracket" in {
-        Seq("(", ")").foreach(x => TestCase(x, Seq(BracketToken(x == "(", 0), EofToken)).check())
+        Seq("(", ")").foreach(x => TestCase(x, Seq(BracketToken(x == "(", meta(0)), EofToken)).check())
       }
 
       "comes whitespaces" in {
-        Seq(" ", "   ", "\t", System.lineSeparator()).foreach(TestCase(_, Seq(WhiteSpaceToken(0), EofToken)).check())
+        Seq(" ", "   ", "\t", System.lineSeparator()).foreach(s => TestCase(s, Seq(WhiteSpaceToken(TokenMeta(0, s.length)), EofToken)).check())
       }
 
       "comes operators" in {
         val cases = Operators.operators
           .map { op =>
-            TestCase(op.pattern, Seq(OperatorToken(op, 0), EofToken))
+            TestCase(op.pattern, Seq(OperatorToken(op, meta(0)), EofToken))
           }
 
         cases.foreach(_.check())
@@ -73,11 +75,26 @@ class TokenizerSpec extends WordSpec with Matchers {
         val `case` = TestCase(
           "1 + 1",
           Seq(
-            NumberToken(1, 0),
-            WhiteSpaceToken(1),
-            OperatorToken(Operators.Plus, 2),
-            WhiteSpaceToken(3),
-            NumberToken(1, 4),
+            NumberToken(1, meta(0)),
+            WhiteSpaceToken(meta(1)),
+            OperatorToken(Operators.Plus, meta(2)),
+            WhiteSpaceToken(meta(3)),
+            NumberToken(1, meta(4)),
+            EofToken
+          )
+        )
+        `case`.check()
+      }
+
+      "comes '1 - 1'" in {
+        val `case` = TestCase(
+          "1 - 1",
+          Seq(
+            NumberToken(1, meta(0)),
+            WhiteSpaceToken(meta(1)),
+            OperatorToken(Operators.Minus, meta(2)),
+            WhiteSpaceToken(meta(3)),
+            NumberToken(1, meta(4)),
             EofToken
           )
         )
@@ -88,11 +105,11 @@ class TokenizerSpec extends WordSpec with Matchers {
         val `case` = TestCase(
           "1 + -1",
           Seq(
-            NumberToken(1, 0),
-            WhiteSpaceToken(1),
-            OperatorToken(Operators.Plus, 2),
-            WhiteSpaceToken(3),
-            NumberToken(-1, 4),
+            NumberToken(1, meta(0)),
+            WhiteSpaceToken(meta(1)),
+            OperatorToken(Operators.Plus, meta(2)),
+            WhiteSpaceToken(meta(3)),
+            NumberToken(-1, TokenMeta(4, 2)),
             EofToken
           )
         )
@@ -103,9 +120,9 @@ class TokenizerSpec extends WordSpec with Matchers {
         val `case` = TestCase(
           "1--1",
           Seq(
-            NumberToken(1, 0),
-            OperatorToken(Operators.Minus, 1),
-            NumberToken(-1, 2),
+            NumberToken(1, meta(0)),
+            OperatorToken(Operators.Minus, meta(1)),
+            NumberToken(-1, TokenMeta(2, 2)),
             EofToken
           )
         )
@@ -116,9 +133,9 @@ class TokenizerSpec extends WordSpec with Matchers {
         val `case` = TestCase(
           "1. 0",
           Seq(
-            NumberToken(1, 0),
-            WhiteSpaceToken(2),
-            NumberToken(0, 3),
+            NumberToken(1, TokenMeta(0, 2)),
+            WhiteSpaceToken(meta(2)),
+            NumberToken(0, meta(3)),
             EofToken
           )
         )
@@ -129,15 +146,15 @@ class TokenizerSpec extends WordSpec with Matchers {
         val `case` = TestCase(
           "1*\t( 2+3)",
           Seq(
-            NumberToken(1, 0),
-            OperatorToken(Operators.Multiply, 1),
-            WhiteSpaceToken(2),
-            BracketToken(isOpen = true, 3),
-            WhiteSpaceToken(4),
-            NumberToken(2, 5),
-            OperatorToken(Operators.Plus, 6),
-            NumberToken(3, 7),
-            BracketToken(isOpen = false, 8),
+            NumberToken(1, meta(0)),
+            OperatorToken(Operators.Multiply, meta(1)),
+            WhiteSpaceToken(meta(2)),
+            BracketToken(isOpen = true, meta(3)),
+            WhiteSpaceToken(meta(4)),
+            NumberToken(2, meta(5)),
+            OperatorToken(Operators.Plus, meta(6)),
+            NumberToken(3, meta(7)),
+            BracketToken(isOpen = false, meta(8)),
             EofToken
           )
         )
