@@ -1,43 +1,60 @@
 package ru.ifkbhit.ppo6.token
 
+import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 
-class Tokenizer(source: String) {
 
-  def tokens: Iterator[QueryPart] = {
-    val stub: QueryPart = null
+trait Tokenizer {
+  def accept(source: String)
 
-    Iterator.iterate((0, stub)) {
-      case (idx, _) =>
-        val s = source.drop(idx)
+  def tokens: Seq[Token]
+}
 
-        val suitable = Tokens.allTokens
-          .flatMap { token =>
-            token.matches(s).map { value =>
-              QueryPart(token, value, idx)
-            }
-          }
+class TokenizerImpl extends Tokenizer {
 
-        require(
-          suitable.nonEmpty || s.isEmpty,
-          s"Unexpected characters at position ${idx + 1}: '${s.charAt(0)}'"
-        )
-        require(suitable.size == 1, buildIntersectMessage(suitable, idx))
+  private val result: ArrayBuffer[Token] = ArrayBuffer()
 
-        idx + suitable.head.size -> suitable.head
+  override def accept(source: String): Unit = acceptRec(source, 0)
+
+  override def tokens: Seq[Token] = result.toSeq
+
+  @tailrec
+  private def acceptRec(source: String, index: Int): Unit = {
+    val suitableOpt = TokenRule.rules
+      .flatMap { rule =>
+        rule.matches(source).map(Suitable(rule, _))
+      }
+      .groupBy(_.rule.weight)
+      .maxByOption(_._1)
+
+    require(
+      suitableOpt.nonEmpty,
+      s"Couldn't resolve token from first chars of string ${source.take(10)} [index: $index]"
+    )
+    val suitables = suitableOpt.get._2
+
+    require(
+      suitables.size == 1,
+      s"Collision: ${suitables.map(s => s"${s.rule.name} with value '${s.value}'").mkString(", ")} [index: $index]"
+    )
+
+    val suitable = suitables.head
+    result += suitable.produce(index)
+
+
+    if (!result.lastOption.contains(EofToken)) {
+      acceptRec(source.drop(suitable.getValueSize), index + suitable.getValueSize)
     }
-      .drop(1) // drop stub
-      .map(_._2)
-      .takeWhile(_.token != Tokens.EOF)
   }
 
-  private def buildIntersectMessage(parts: Seq[QueryPart], idx: Int): String = {
-    val partsStringifies: String =
-      parts.map {
-        case QueryPart(token, value, _) =>
-          s"value '$value' from token $token"
-      }.mkString(", ")
+  private case class Suitable(rule: TokenRule, value: String) {
+    def produce(index: Int): Token = {
+      val res = rule.produce(value, index)
+      require(res.nonEmpty, s"Couldn't produce token by rule ${rule.name} from '$value'")
+      res.get
+    }
 
-    s"Got ${parts.size} intersections at position ${idx + 1}: $partsStringifies"
+    def getValueSize: Int = value.length
   }
 
 }

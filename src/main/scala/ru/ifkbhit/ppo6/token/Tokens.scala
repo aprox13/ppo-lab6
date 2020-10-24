@@ -1,29 +1,29 @@
 package ru.ifkbhit.ppo6.token
 
-import scala.util.matching.Regex
+import ru.ifkbhit.ppo6.Visitor
+import ru.ifkbhit.ppo6.model.Operators.Operator
 
-object Tokens extends Enumeration {
+sealed trait Token {
+  def accept(visitor: Visitor): Unit = {}
 
-  val Number: Token = RegexpToken("\\d+".r, "{{number}}")
-  val Whitespaces: Token = RegexpToken("\\s+".r, "{{whitespace}}")
-  val Bracket: Token = RegexpToken("[()]".r, "{{bracket}}")
-  val Operator: Token = RegexpToken("[+\\-*/]".r, "{{operator}}")
-  val EOF: Token = new Token("{{eof}}") {
-    override def matches(s: String): Option[String] = Some(s).filterNot(_.nonEmpty)
-  }
-
-  def allTokens: Seq[Token] =
-    values.collect {
-      case x: Token => x
-    }.toSeq
-
-  sealed abstract class Token(name: String) extends super.Val(name) {
-    def matches(s: String): Option[String]
-  }
-
-  case class RegexpToken(regexp: Regex, name: String = "") extends Token(name) {
-    override def matches(s: String): Option[String] =
-      regexp.findPrefixOf(s)
-  }
-
+  def startIndex: Int
 }
+
+case class NumberToken(value: Double, override val startIndex: Int) extends Token {
+  override def accept(visitor: Visitor): Unit = visitor.visitNumber(this)
+}
+
+case class BracketToken(isOpen: Boolean, override val startIndex: Int) extends Token {
+  override def accept(visitor: Visitor): Unit = visitor.visitBracket(this)
+}
+
+case class OperatorToken(operator: Operator, override val startIndex: Int) extends Token {
+  override def accept(visitor: Visitor): Unit = visitor.visitOperator(this)
+}
+
+case class WhiteSpaceToken(override val startIndex: Int) extends Token
+
+case object EofToken extends Token {
+  override def startIndex: Int = -1
+}
+
