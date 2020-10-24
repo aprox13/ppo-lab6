@@ -1,24 +1,24 @@
 package ru.ifkbhit.ppo6.token
 
-import ru.ifkbhit.ppo6.Visitor
 import ru.ifkbhit.ppo6.model.Operators.Operator
+import ru.ifkbhit.ppo6.visit.Visitor
 
 sealed trait Token {
-  def accept(visitor: Visitor): Unit = {}
+  def accept(visitor: Visitor[_]): Unit = {}
 
   def startIndex: Int
 }
 
 case class NumberToken(value: Double, override val startIndex: Int) extends Token {
-  override def accept(visitor: Visitor): Unit = visitor.visitNumber(this)
+  override def accept(visitor: Visitor[_]): Unit = visitor.visitNumber(this)
 }
 
 case class BracketToken(isOpen: Boolean, override val startIndex: Int) extends Token {
-  override def accept(visitor: Visitor): Unit = visitor.visitBracket(this)
+  override def accept(visitor: Visitor[_]): Unit = visitor.visitBracket(this)
 }
 
 case class OperatorToken(operator: Operator, override val startIndex: Int) extends Token {
-  override def accept(visitor: Visitor): Unit = visitor.visitOperator(this)
+  override def accept(visitor: Visitor[_]): Unit = visitor.visitOperator(this)
 }
 
 case class WhiteSpaceToken(override val startIndex: Int) extends Token
