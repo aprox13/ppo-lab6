@@ -7,7 +7,7 @@ trait Visitor[R] {
 
   def visitOperator(operatorToken: OperatorToken): Unit
 
-  def visitBracket(operatorToken: BracketToken): Unit
+  def visitBracket(bracketToken: BracketToken): Unit
 
   def produce: R
 }
