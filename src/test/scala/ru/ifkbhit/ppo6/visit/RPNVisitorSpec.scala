@@ -19,18 +19,6 @@ class RPNVisitorSpec extends WordSpec with Matchers {
     toStringVisitor.produce
   }
 
-  private def failExpected(input: String): Unit = {
-    val tokenizer = new TokenizerImpl
-    tokenizer.accept(input)
-
-
-    val rpn = new RPNVisitor
-    tokenizer.tokens.foreach(_.accept(rpn))
-
-    val toStringVisitor = new ToStringVisitor(spacesBetween = true)
-    rpn.produce.foreach(_.accept(toStringVisitor))
-  }
-
   private case class TestCase(input: String, expected: String) {
     def check(): Assertion = execute(input) shouldBe expected
   }
