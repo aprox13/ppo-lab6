@@ -8,7 +8,7 @@ import scala.collection.mutable
 object Main {
   def main(args: Array[String]): Unit = {
 
-    val input = "1 + ( 2 - 3 ) * 4"
+    val input = "(1+2)*4 + 3"
 
     val tokenizer = new TokenizerImpl
     tokenizer.accept(input)

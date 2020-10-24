@@ -10,14 +10,11 @@ sealed trait TokenRule {
   def name: String = this.getClass.getSimpleName
 
   def produce(s: String, index: Int): Option[Token]
-
-  def weight: Int
 }
 
 sealed abstract class RegexpTokenRule(
   regex: Regex,
   produceF: (String, Int) => Option[Token] = (_, _) => None,
-  override val weight: Int = 0
 ) extends TokenRule {
   override def matches(s: String): Option[String] =
     regex.findPrefixOf(s)
@@ -29,7 +26,6 @@ sealed abstract class RegexpTokenRule(
 case object NumberTokenRule extends RegexpTokenRule(
   "(-\\s*)?\\d+(\\.(\\d+)?)?".r,
   TokenRule.produceF(_.replaceAll("\\s*", "").toDouble, NumberToken),
-  weight = 1 // more than operators
 )
 
 case object WhitespacesTokenRule extends RegexpTokenRule(
@@ -39,8 +35,7 @@ case object WhitespacesTokenRule extends RegexpTokenRule(
 
 case object BracketTokenRule extends RegexpTokenRule(
   "[()]".r,
-  TokenRule.produceF(_ == "(", BracketToken),
-  weight = 2
+  TokenRule.produceF(_ == "(", BracketToken)
 )
 
 case object OperatorTokenRule extends RegexpTokenRule(
@@ -54,8 +49,6 @@ case object EofTokenRule extends TokenRule {
 
   override def produce(s: String, index: Int): Option[Token] =
     Some(EofToken)
-
-  override def weight: Int = -1
 }
 
 object TokenRule {

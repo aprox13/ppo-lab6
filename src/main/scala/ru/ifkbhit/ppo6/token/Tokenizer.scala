@@ -56,9 +56,11 @@ class TokenizerImpl extends Tokenizer {
       case Nil =>
         throw new IllegalStateException(s"Couldn't resolve token from string at index: $index")
       case element :: Nil =>
+        import element._
         element.produce(index)
+          .getOrElse(throw new IllegalStateException(s"Couldn't produce token by rule ${rule.name} from '$value'"))
       case list =>
-        val resolved = resolveConflictsRec(list.flatMap(_.produceSafe(index)))
+        val resolved = resolveConflictsRec(list.flatMap(_.produce(index)))
 
         resolved.getOrElse(
           throw new IllegalStateException(s"Collision: ${suitable.map(s => s"${s.rule.name} with value '${s.value}'").mkString(", ")} [index: $index]")
@@ -87,13 +89,7 @@ class TokenizerImpl extends Tokenizer {
   }
 
   private case class Suitable(rule: TokenRule, value: String) {
-    def produce(index: Int): Token = {
-      val res = produceSafe(index)
-      require(res.nonEmpty, s"Couldn't produce token by rule ${rule.name} from '$value'")
-      res.get
-    }
-
-    def produceSafe(index: Int): Option[Token] =
+    def produce(index: Int): Option[Token] =
       rule.produce(value, index)
   }
 
