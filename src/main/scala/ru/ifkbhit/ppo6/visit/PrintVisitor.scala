@@ -4,9 +4,11 @@ import java.io.PrintStream
 
 import ru.ifkbhit.ppo6.token.{BracketToken, NumberToken, OperatorToken}
 
-class PrintStreamPrinterVisitor(ps: PrintStream) extends Visitor[Unit] {
+class PrintStreamPrinterVisitor(ps: PrintStream, spacesBetween: Boolean) extends Visitor[Unit] {
 
-  override def visitNumber(numberToken: NumberToken): Unit = ps.print(numberToString(numberToken))
+  private val Delimiter: String = if (spacesBetween) " " else ""
+
+  override def visitNumber(numberToken: NumberToken): Unit = ps.print(numberToString(numberToken) + Delimiter)
 
   private def numberToString(numberToken: NumberToken): String = {
     import numberToken._
@@ -18,9 +20,9 @@ class PrintStreamPrinterVisitor(ps: PrintStream) extends Visitor[Unit] {
     }
   }
 
-  override def visitOperator(operatorToken: OperatorToken): Unit = ps.print(operatorToken.operator.pattern)
+  override def visitOperator(operatorToken: OperatorToken): Unit = ps.print(operatorToken.operator.pattern + Delimiter)
 
-  override def visitBracket(bracketToken: BracketToken): Unit = ps.print(bracketToString(bracketToken))
+  override def visitBracket(bracketToken: BracketToken): Unit = ps.print(bracketToString(bracketToken) + Delimiter)
 
   private def bracketToString(bracketToken: BracketToken): String =
     if (bracketToken.isOpen) "(" else ")"
@@ -29,4 +31,4 @@ class PrintStreamPrinterVisitor(ps: PrintStream) extends Visitor[Unit] {
 }
 
 
-case object PrintVisitor extends PrintStreamPrinterVisitor(System.out)
+case object PrintVisitor extends PrintStreamPrinterVisitor(System.out, spacesBetween = true)
