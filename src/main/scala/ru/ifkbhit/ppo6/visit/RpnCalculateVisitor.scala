@@ -14,7 +14,7 @@ class RpnCalculateVisitor extends Visitor[Double] {
 
   override def visitOperator(operatorToken: OperatorToken): Unit = {
     if (stack.size < 2) {
-      throw new IllegalStateException(s"Unexpected operator ${operatorToken.operator}, expected ${if (stack.isEmpty) 2 else 1} number(s)")
+      throw new IllegalStateException(s"Unexpected operator ${operatorToken.operator}, expected ${if (stack.isEmpty) 2 else 1} number(s) before")
     }
 
     val a = stack.pop()

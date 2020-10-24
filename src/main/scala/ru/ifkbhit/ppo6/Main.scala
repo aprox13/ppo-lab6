@@ -28,7 +28,7 @@ object Main {
     val calculateVisitor = new RpnCalculateVisitor with AcceptAndProduceVisitor[Double]
     val res = calculateVisitor.acceptAndProduce(rpn).prettyString
 
-    println(s"Result: $res")
+    println(s"Result from RPN: $res")
   } recover {
     case t =>
       println(s"Couldn't calculate, because: ${t.getMessage}")

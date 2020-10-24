@@ -18,6 +18,9 @@ class TokenizerImpl extends Tokenizer {
   private val result: ArrayBuffer[Token] = ArrayBuffer()
   private var lastNonWsToken: Option[Token] = None
 
+  private def highlight(s: String, index: Int): String =
+    s + System.lineSeparator() + (" " * index + "^") + System.lineSeparator()
+
   override def accept(source: String): Unit = acceptRec(source, 0)
 
   override def tokens: Seq[Token] = result.toSeq
@@ -51,31 +54,45 @@ class TokenizerImpl extends Tokenizer {
     }
   }
 
-  private def resolveToken(suitable: List[Suitable], index: Int): Token =
+  private def resolveToken(suitable: List[Suitable], index: Int, source: String): Token =
     suitable match {
       case Nil =>
-        throw new IllegalStateException(s"Couldn't resolve token from string at index: $index")
+        throw new IllegalStateException(
+          s"Couldn't resolve token from string at index: $index" +
+            System.lineSeparator() +
+            highlight(source, index)
+        )
       case element :: Nil =>
         import element._
         element.produce(index)
-          .getOrElse(throw new IllegalStateException(s"Couldn't produce token by rule ${rule.name} from '$value'"))
+          .getOrElse(
+            throw new IllegalStateException(
+              s"Couldn't produce token by rule ${rule.name} from '$value'" +
+                System.lineSeparator() +
+                highlight(source, index)
+            )
+          )
       case list =>
         val resolved = resolveConflictsRec(list.flatMap(_.produce(index)))
 
         resolved.getOrElse(
-          throw new IllegalStateException(s"Collision: ${suitable.map(s => s"${s.rule.name} with value '${s.value}'").mkString(", ")} [index: $index]")
+          throw new IllegalStateException(
+            s"Collision: ${suitable.map(s => s"${s.rule.name} with value '${s.value}'").mkString(", ")} at index: $index" +
+              System.lineSeparator() +
+              highlight(source, index)
+          )
         )
     }
 
   @tailrec
-  private def acceptRec(source: String, index: Int): Unit = {
+  private def acceptRec(s: String, index: Int): Unit = {
+    val source = s.drop(index)
     val suitable = TokenRule.rules
       .flatMap { rule =>
         rule.matches(source).map(Suitable(rule, _))
       }.toList
 
-    val token = resolveToken(suitable, index)
-
+    val token = resolveToken(suitable, index, s)
 
     result += token
 
@@ -84,7 +101,7 @@ class TokenizerImpl extends Tokenizer {
     }
 
     if (token != EofToken) {
-      acceptRec(source.drop(token.tokenMeta.length), index + token.tokenMeta.length)
+      acceptRec(s, index + token.tokenMeta.length)
     }
   }
 
