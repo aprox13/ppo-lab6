@@ -8,6 +8,5 @@ trait Visitor {
   def visitOperator(operatorToken: OperatorToken): Unit
 
   def visitBracket(operatorToken: BracketToken): Unit
-}
 
 }
