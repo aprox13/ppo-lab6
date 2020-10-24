@@ -11,9 +11,8 @@ class RPNVisitor extends Visitor[Seq[Token]] {
   private val result: ArrayBuffer[Token] = ArrayBuffer()
   private val stack: mutable.Stack[Token] = mutable.Stack()
 
-  override def visitNumber(numberToken: NumberToken): Unit = {
+  override def visitNumber(numberToken: NumberToken): Unit =
     result += numberToken
-  }
 
   override def visitOperator(operatorToken: OperatorToken): Unit = {
     stackToResultWhile(token => getTokenWeight(token) >= getTokenWeight(operatorToken))
@@ -34,21 +33,15 @@ class RPNVisitor extends Visitor[Seq[Token]] {
     }
 
   override def visitBracket(bracketToken: BracketToken): Unit = {
-    bracketToken match {
-      case BracketToken(true, _) => // open bracket
-        stack.push(bracketToken)
-      case _ => // close bracket
-        stackToResultWhile(tracedFun("move on close", !_.isOpenBracket))
-        if (!stack.headOption.exists(_.isOpenBracket)) {
-          throw new IllegalStateException(s"Unexpected close bracket at index ${bracketToken.tokenMeta.startIndex}")
-        }
-        stack.pop() // remove open bracket
+    if (bracketToken.isOpenBracket) {
+      stack.push(bracketToken)
+    } else {
+      stackToResultWhile(!_.isOpenBracket)
+      if (!stack.headOption.exists(_.isOpenBracket)) {
+        throw new IllegalStateException(s"Unexpected close bracket at index ${bracketToken.tokenMeta.startIndex}")
+      }
+      stack.pop() // remove open bracket
     }
-  }
-
-  def tracedFun[A, B](prefix: String, f: A => B)(a: A): B = {
-    println(s"$prefix, called for: $a")
-    f(a)
   }
 
   override def produce: Seq[Token] = {
